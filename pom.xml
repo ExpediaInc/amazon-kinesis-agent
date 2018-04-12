@@ -24,6 +24,8 @@
 
     <properties>
         <aws-java-sdk.version>1.11.28</aws-java-sdk.version>
+        <protobuf.version>3.3.1</protobuf.version>
+        <protobuf-maven-plugin.version>3.3.0.1</protobuf-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -31,6 +33,11 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>6.11</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -192,10 +199,53 @@
 
     <build>
       <directory>target</directory>
-      <outputDirectory>target/classes</outputDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.os72</groupId>
+                <artifactId>protoc-jar-maven-plugin</artifactId>
+                <version>${protobuf-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <includeDirectories>
+                                <include>${project.basedir}/haystack-idl/proto</include>
+                            </includeDirectories>
+                            <inputDirectories>
+                                <include>${project.basedir}/haystack-idl/proto</include>
+                            </inputDirectories>
+                            <outputDirectory>${project.basedir}/target/generated-sources</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+        <outputDirectory>target/classes</outputDirectory>
       <finalName>${project.artifactId}-${project.version}</finalName>
       <sourceDirectory>src</sourceDirectory>
       <scriptSourceDirectory>src</scriptSourceDirectory>
+      <resources>
+          <resource>
+              <directory>src/com/amazon/kinesis/streaming/agent</directory>
+              <targetPath>com/amazon/kinesis/streaming/agent</targetPath>
+              <includes>
+                  <include>custom.log4j.xml</include>
+                  <include>versionInfo.properties</include>
+              </includes>
+          </resource>
+      </resources>
       <pluginManagement>
         <plugins>
           <plugin>
@@ -203,30 +253,27 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.2</version>
             <configuration>
-              <source>1.7</source>
-              <target>1.7</target>
+              <source>1.8</source>
+              <target>1.8</target>
               <encoding>UTF-8</encoding>
             </configuration>
           </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.amazon.kinesis.streaming.agent.Agent</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
         </plugins>
       </pluginManagement>
 
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.5</version>
-          <executions>
-            <execution>
-              <id>sign-artifacts</id>
-              <phase>verify</phase>
-              <goals>
-                <goal>sign</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
     </build>
 
 </project>
