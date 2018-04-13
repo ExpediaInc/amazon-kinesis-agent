@@ -14,25 +14,20 @@
 package com.amazon.kinesis.streaming.agent.processing.processors;
 
 import com.amazon.kinesis.streaming.agent.ByteBuffers;
-import com.amazon.kinesis.streaming.agent.processing.exceptions.DataConversionException;
 import com.amazon.kinesis.streaming.agent.processing.interfaces.IDataConverter;
-import com.amazonaws.services.kinesis.model.Record;
 import com.expedia.open.tracing.Log;
 import com.expedia.open.tracing.Span;
 import com.expedia.open.tracing.Tag;
 import com.expedia.www.haystack.expweb.log.transformer.TraceTags;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,7 +37,7 @@ import java.util.regex.Pattern;
 public class ExpwebTraceToSpanConverter implements IDataConverter {
 
     @Override
-    public ByteBuffer convert(ByteBuffer data) throws DataConversionException {
+    public ByteBuffer convert(ByteBuffer data) {
         final String record = ByteBuffers.toString(data, StandardCharsets.UTF_8);
         final Map<String, String> recordMap = splitRecord(record);
         Span span = createSpan(recordMap);
@@ -85,18 +80,20 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
         final String parentMessageId = recordMap.get(TraceTags.PARENT_MESSAGE_ID.getKey());
         final long eventTime = Long.parseLong(recordMap.get(TraceTags.EVENT_TIME.getKey()));
         final long duration = Long.parseLong(recordMap.get(TraceTags.DURATION.getKey()));
-        final String transactionType = recordMap.getOrDefault(TraceTags.TRANSACTION_TYPE.getKey(), "");
+        final String transactionType = getOrDefault(recordMap, TraceTags.TRANSACTION_TYPE.getKey(), "");
         final long startTime = eventTime - duration;
 
         final Span.Builder spanBuilder = Span.newBuilder()
                 .setServiceName(CLIENT_NAME)
                 .setTraceId(traceId)
                 .setSpanId(messageId)
-                .setOperationName(recordMap.getOrDefault(TraceTags.EVENT_NAME_KEY.getKey(), ""))
+                .setOperationName(getOrDefault(recordMap, TraceTags.EVENT_NAME_KEY.getKey(), ""))
                 .setStartTime(startTime * 1000)
                 .setDuration(duration * 1000)
-                .addTags(Tag.newBuilder().setType(Tag.TagType.STRING).setKey("clientVersion").setVStr(recordMap.getOrDefault(TraceTags.CLIENT.getKey(), "")).build())
-                .addTags(Tag.newBuilder().setType(Tag.TagType.STRING).setKey("hostIP").setVStr(recordMap.getOrDefault(TraceTags.CLIENT_IP.getKey(), "")).build())
+                .addTags(Tag.newBuilder().setType(Tag.TagType.STRING).setKey("clientVersion").setVStr(getOrDefault
+                        (recordMap, TraceTags.CLIENT.getKey(), "")).build())
+                .addTags(Tag.newBuilder().setType(Tag.TagType.STRING).setKey("hostIP").setVStr(getOrDefault
+                        (recordMap, TraceTags.CLIENT_IP.getKey(), "")).build())
                 .addAllTags(getContextList(recordMap))
                 .addAllLogs(getTransactionTypeLogs(transactionType, startTime, eventTime));
 
@@ -106,6 +103,12 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
         }
 
         return spanBuilder.build();
+    }
+
+    private String getOrDefault(Map<String, String> recordMap, String key, String defaultVal) {
+        final String value = recordMap.get(key);
+        return (value != null)? value : defaultVal;
+
     }
 
     private List<Log> getTransactionTypeLogs(String transactionType, long startTime, long endTime) {
@@ -137,18 +140,19 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
             final boolean isError = "false".equalsIgnoreCase(kvs.get(SUCCESS_KEY));
             addErrorTag(contextList, isError);
         }
-
-        kvs.forEach((k, v) -> {
-            if (k.equalsIgnoreCase(ERROR_KEY) || isTraceTag(k)) {
-                return;
+        for (Map.Entry<String, String> entry: kvs.entrySet()) {
+            final String key = entry.getKey();
+            final String value = entry.getValue();
+            if (key.equalsIgnoreCase(ERROR_KEY) || isTraceTag(key)) {
+                continue;
             }
 
-            final Tag.Builder tagBuilder = Tag.newBuilder().setType(Tag.TagType.STRING).setKey(k);
-            if (v != null) {
-                tagBuilder.setVStr(v);
+            final Tag.Builder tagBuilder = Tag.newBuilder().setType(Tag.TagType.STRING).setKey(key);
+            if (value != null) {
+                tagBuilder.setVStr(value);
             }
             contextList.add(tagBuilder.build());
-        });
+        }
 
         return contextList;
     }
@@ -159,13 +163,10 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
     }
 
     private boolean isTraceTag(String key) {
-        return Arrays.stream(TraceTags.values())
-                .map(TraceTags::getKey)
-                .anyMatch(tag -> tag.equalsIgnoreCase(key));
-    }
-
-    private Record toRecord(Span span) throws JsonProcessingException {
-        final ByteBuffer batchData = ByteBuffer.wrap(span.toByteArray());
-        return new Record().withPartitionKey(span.getTraceId()).withData(batchData);
+        for (TraceTags t : TraceTags.values()) {
+            if (t.getKey().equalsIgnoreCase(key))
+                return true;
+        }
+        return false;
     }
 }
