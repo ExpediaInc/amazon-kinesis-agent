@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  */
 public class ExpwebTraceToSpanConverter implements IDataConverter {
 
-    enum TraceTags {
+    private enum TraceTags {
         CLIENT("client"),
         TRANSACTION_TYPE("transactiontype"),
         EVENT_NAME_KEY("eventname"),
