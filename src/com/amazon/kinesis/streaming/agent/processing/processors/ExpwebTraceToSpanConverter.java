@@ -1,16 +1,3 @@
-/*
- * Copyright 2014-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * 
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the License. 
- * A copy of the License is located at
- * 
- *  http://aws.amazon.com/asl/
- *  
- * or in the "license" file accompanying this file. 
- * This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
- * See the License for the specific language governing permissions and limitations under the License.
- */
 package com.amazon.kinesis.streaming.agent.processing.processors;
 
 import com.amazon.kinesis.streaming.agent.ByteBuffers;
@@ -18,7 +5,6 @@ import com.amazon.kinesis.streaming.agent.processing.interfaces.IDataConverter;
 import com.expedia.open.tracing.Log;
 import com.expedia.open.tracing.Span;
 import com.expedia.open.tracing.Tag;
-import com.expedia.www.haystack.expweb.log.transformer.TraceTags;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.ByteBuffer;
@@ -36,6 +22,28 @@ import java.util.regex.Pattern;
  */
 public class ExpwebTraceToSpanConverter implements IDataConverter {
 
+    enum TraceTags {
+        CLIENT("client"),
+        TRANSACTION_TYPE("transactiontype"),
+        EVENT_NAME_KEY("eventname"),
+        TRACE_ID("traceid"),
+        MESSAGE_ID("messageid"),
+        PARENT_MESSAGE_ID("parentmessageid"),
+        EVENT_TIME("eventtime"),
+        DURATION("duration"),
+        CLIENT_IP("clientip");
+
+        private final String key;
+
+        TraceTags(String key) {
+            this.key = key;
+        }
+
+        public String getKey() {
+            return this.key;
+        }
+    }
+
     @Override
     public ByteBuffer convert(ByteBuffer data) {
         final String record = ByteBuffers.toString(data, StandardCharsets.UTF_8);
@@ -43,7 +51,7 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
         Span span = createSpan(recordMap);
         return ByteBuffer.wrap(span.toByteArray());
     }
-    
+
     @Override
     public String toString() {
         return getClass().getSimpleName();

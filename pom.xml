@@ -24,8 +24,7 @@
 
     <properties>
         <aws-java-sdk.version>1.11.28</aws-java-sdk.version>
-        <protobuf.version>3.3.1</protobuf.version>
-        <protobuf-maven-plugin.version>3.3.0.1</protobuf-maven-plugin.version>
+        <haystack-commons.version>1.0.9</haystack-commons.version>
     </properties>
 
     <dependencies>
@@ -35,9 +34,9 @@
             <version>6.11</version>
         </dependency>
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
+            <groupId>com.expedia.www</groupId>
+            <artifactId>haystack-commons</artifactId>
+            <version>${haystack-commons.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -199,39 +198,6 @@
 
     <build>
       <directory>target</directory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.github.os72</groupId>
-                <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>${protobuf-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <includeDirectories>
-                                <include>${project.basedir}/haystack-idl/proto</include>
-                            </includeDirectories>
-                            <inputDirectories>
-                                <include>${project.basedir}/haystack-idl/proto</include>
-                            </inputDirectories>
-                            <outputDirectory>${project.basedir}/target/generated-sources</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-        </plugins>
         <outputDirectory>target/classes</outputDirectory>
       <finalName>${project.artifactId}-${project.version}</finalName>
       <sourceDirectory>src</sourceDirectory>
