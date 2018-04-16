@@ -22,6 +22,23 @@ if [ "$(id -u)" != "0" ]; then
  exit 1
 fi
 
+# Based on the OS, determine which commands we'll be calling to install/manage
+# certain things
+case "$dist" in
+  Ubuntu)
+    install_package="apt-get install -y"
+    init_dir=/etc/init.d
+    sysconfig_dir=/etc/default ;;
+  Debian)
+    install_package="apt-get install -y"
+    init_dir=/etc/init.d
+    sysconfig_dir=/etc/default ;;
+  *)
+    install_package="yum install -y"
+    init_dir=/etc/rc.d/init.d
+    sysconfig_dir=/etc/sysconfig ;;
+esac
+
 daemon_name=aws-kinesis-agent
 agent_user_name=aws-kinesis-agent-user
 bin_dir=/usr/bin
@@ -108,7 +125,7 @@ download_dependencies() {
                   org.xerial:sqlite-jdbc:3.8.11.2 \
                   joda-time:joda-time:2.8.2 \
                   com.google.protobuf:protobuf-java:3.3.1 \
-                  com.google.protobuf:protobuf-java:3.3.1 \
+                  com.expedia.www:haystack-commons:1.0.9 \
                   org.projectlombok:lombok:1.16.6"
   
   for package in ${remote_mvn_pkg}
