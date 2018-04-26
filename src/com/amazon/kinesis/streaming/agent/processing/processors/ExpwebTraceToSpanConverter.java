@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -148,6 +149,8 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
             final boolean isError = "false".equalsIgnoreCase(kvs.get(SUCCESS_KEY));
             addErrorTag(contextList, isError);
         }
+        // add the infrastructure provider
+        createInfrastructureTag(kvs).ifPresent(contextList::add);
         for (Map.Entry<String, String> entry: kvs.entrySet()) {
             final String key = entry.getKey();
             final String value = entry.getValue();
@@ -163,6 +166,19 @@ public class ExpwebTraceToSpanConverter implements IDataConverter {
         }
 
         return contextList;
+    }
+
+    private Optional<Tag> createInfrastructureTag(Map<String, String> kvs) {
+        final String du = kvs.get("du");
+        Optional<String> infraProvider = Optional.empty();
+        if (StringUtils.equals(du, "expweb5551") || StringUtils.equals(du, "expweb5552")) {
+            infraProvider = Optional.of("dc");
+        } else if (StringUtils.equals(du, "expwebsingle") || StringUtils.equals(du, "expweb-single")) {
+            infraProvider = Optional.of("aws");
+        }
+        return infraProvider.map(inf -> Tag.newBuilder().setType(Tag.TagType.STRING).setKey
+                ("X-HAYSTACK-INFRASTRUCTURE-PROVIDER")
+                .setVStr(inf).build());
     }
 
     private void addErrorTag(List<Tag> contextList, boolean isError) {
