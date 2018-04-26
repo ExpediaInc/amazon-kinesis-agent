@@ -24,9 +24,15 @@
 
     <properties>
         <aws-java-sdk.version>1.11.28</aws-java-sdk.version>
+        <haystack-commons.version>1.0.9</haystack-commons.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.expedia.www</groupId>
+            <artifactId>haystack-commons</artifactId>
+            <version>${haystack-commons.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
@@ -203,8 +209,8 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.2</version>
             <configuration>
-              <source>1.7</source>
-              <target>1.7</target>
+              <source>1.8</source>
+              <target>1.8</target>
               <encoding>UTF-8</encoding>
             </configuration>
           </plugin>
@@ -226,6 +232,14 @@
             </execution>
           </executions>
         </plugin>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                  <source>1.8</source>
+                  <target>1.8</target>
+              </configuration>
+          </plugin>
       </plugins>
     </build>
 
